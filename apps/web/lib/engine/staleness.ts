@@ -1,81 +1,160 @@
-import { serviceClient } from "@/lib/supabase/service";
-import type { ExtractedPackage, VulnerabilityResult } from "@hwa/types";
+import { getServiceClient } from "@/lib/supabase/service";
 
-const CODE_PATTERNS: Array<{
+interface CodePattern {
   pattern: RegExp;
   description: string;
   suggestion: string;
-  severity: VulnerabilityResult["severity"];
-}> = [
-  // Cryptography
+  severity: "critical" | "high" | "medium" | "low";
+  languages?: string[];
+}
+
+interface VulnerabilityResult {
+  type: string;
+  severity: string;
+  lineStart: number;
+  lineEnd: number;
+  description: string;
+  cveId: null;
+  suggestion: string;
+}
+
+const CODE_PATTERNS: CodePattern[] = [
+  // ── Cryptography ──────────────────────────────────────────────
   {
     pattern: /createHash\s*\(\s*['"]md5['"]\s*\)/g,
     description:
       "MD5 is cryptographically broken and must not be used for security purposes",
     suggestion: "Use SHA-256 or bcrypt/argon2 for password hashing",
     severity: "critical",
+    languages: ["typescript", "javascript"],
+  },
+  {
+    pattern: /hashlib\.md5\s*\(/g,
+    description:
+      "MD5 is cryptographically broken and must not be used for security purposes",
+    suggestion: "Use hashlib.sha256() or bcrypt/argon2 for password hashing",
+    severity: "critical",
+    languages: ["python"],
   },
   {
     pattern: /createHash\s*\(\s*['"]sha1['"]\s*\)/g,
     description: "SHA1 is deprecated for security use cases by NIST",
     suggestion: "Use SHA-256 or higher for cryptographic operations",
     severity: "high",
+    languages: ["typescript", "javascript"],
+  },
+  {
+    pattern: /hashlib\.sha1\s*\(/g,
+    description: "SHA1 is deprecated for security use cases by NIST",
+    suggestion: "Use hashlib.sha256() or higher for cryptographic operations",
+    severity: "high",
+    languages: ["python"],
   },
 
-  // Injection
+  // ── SQL Injection ─────────────────────────────────────────────
   {
-    pattern: /SELECT\s+\*\s+FROM\s+\w+\s+WHERE\s+\w+\s*=\s*['"]\s*\$\{/gi,
+    pattern: /SELECT\s+.*\s+FROM\s+\w+\s+WHERE\s+.*\$\{/gi,
     description:
       "Potential SQL injection — user input interpolated directly into query",
     suggestion: "Use parameterized queries or a query builder",
     severity: "critical",
+    languages: ["typescript", "javascript"],
   },
-  {
-    pattern: /eval\s*\(/g,
-    description:
-      "eval() executes arbitrary code and is a critical security risk",
-    suggestion: "Remove eval() — refactor to avoid dynamic code execution",
-    severity: "critical",
-  },
-
-  // Weak randomness
-  {
-    pattern: /Math\.random\s*\(\s*\)/g,
-    description: "Math.random() is not cryptographically secure",
-    suggestion: "Use crypto.randomBytes() or crypto.randomUUID() instead",
-    severity: "medium",
-  },
-
-  // Hardcoded secrets
   {
     pattern:
-      /(['"`])(?:password|passwd|pwd)\s*(?:=|:)\s*['"`][^'"`]{4,}['"`]/gi,
+      /(?:execute|cursor\.execute)\s*\(\s*f['""].*(?:username|password|email|id|input)/gi,
+    description:
+      "Potential SQL injection — f-string used in SQL query with user input",
+    suggestion:
+      "Use parameterized queries: cursor.execute('SELECT * FROM users WHERE id = ?', (id,))",
+    severity: "critical",
+    languages: ["python"],
+  },
+  {
+    pattern: /(?:execute|cursor\.execute)\s*\(\s*['"].*%s.*['"].*%/gi,
+    description:
+      "Potential SQL injection — string formatting used in SQL query",
+    suggestion: "Use parameterized queries instead of string formatting",
+    severity: "critical",
+    languages: ["python"],
+  },
+
+  // ── Command Injection ─────────────────────────────────────────
+  {
+    pattern: /subprocess\.(run|call|Popen)\s*\(.*shell\s*=\s*True/g,
+    description:
+      "Command injection risk — shell=True with user input is dangerous",
+    suggestion:
+      "Use shell=False and pass arguments as a list: subprocess.run(['cmd', arg])",
+    severity: "critical",
+    languages: ["python"],
+  },
+  {
+    pattern: /os\.system\s*\(/g,
+    description: "os.system() is vulnerable to command injection",
+    suggestion: "Use subprocess.run() with shell=False instead",
+    severity: "critical",
+    languages: ["python"],
+  },
+
+  // ── Unsafe Deserialization ────────────────────────────────────
+  {
+    pattern: /pickle\.loads?\s*\(/g,
+    description:
+      "Unsafe deserialization — pickle.load() can execute arbitrary code",
+    suggestion:
+      "Never deserialize untrusted data with pickle — use JSON or MessagePack instead",
+    severity: "critical",
+    languages: ["python"],
+  },
+  {
+    pattern: /yaml\.load\s*\([^,)]+\)/g,
+    description:
+      "Unsafe YAML deserialization — yaml.load() without Loader can execute arbitrary code",
+    suggestion: "Use yaml.safe_load() instead of yaml.load()",
+    severity: "critical",
+    languages: ["python"],
+  },
+
+  // ── SSL/TLS ───────────────────────────────────────────────────
+  {
+    pattern: /verify\s*=\s*False/g,
+    description:
+      "SSL certificate verification disabled — vulnerable to MITM attacks",
+    suggestion: "Remove verify=False and use proper SSL certificates",
+    severity: "high",
+    languages: ["python"],
+  },
+  {
+    pattern: /rejectUnauthorized\s*:\s*false/g,
+    description:
+      "SSL certificate verification disabled — vulnerable to MITM attacks",
+    suggestion:
+      "Remove rejectUnauthorized: false and use proper SSL certificates",
+    severity: "high",
+    languages: ["typescript", "javascript"],
+  },
+
+  // ── Hardcoded Secrets (all languages) ────────────────────────
+  {
+    pattern: /(?:password|passwd|pwd)\s*=\s*['`"][^'`"]{4,}['`"]/gi,
     description: "Hardcoded password detected in source code",
     suggestion:
       "Move credentials to environment variables and never commit secrets",
     severity: "critical",
   },
   {
-    pattern:
-      /(['"`])(?:secret|api_secret|client_secret)\s*(?:=|:)\s*['"`][^'"`]{4,}['"`]/gi,
+    pattern: /(?:secret|api_secret|client_secret)\s*=\s*['`"][^'`"]{4,}['`"]/gi,
     description: "Hardcoded secret detected in source code",
     suggestion:
       "Move secrets to environment variables — use a secrets manager in production",
     severity: "critical",
   },
   {
-    pattern: /(?:api_key|apikey|api-key)\s*(?:=|:)\s*['"`][^'"`]{8,}['"`]/gi,
+    pattern: /(?:api_key|apikey|api-key)\s*(?:=|:)\s*['`"][^'`"]{8,}['`"]/gi,
     description: "Hardcoded API key detected in source code",
     suggestion:
       "Move API keys to environment variables and rotate the exposed key immediately",
-    severity: "critical",
-  },
-  {
-    pattern:
-      /(?:token|auth_token|access_token)\s*(?:=|:)\s*['"`][a-zA-Z0-9_\-\.]{16,}['"`]/g,
-    description: "Hardcoded token detected in source code",
-    suggestion:
-      "Move tokens to environment variables and rotate the exposed token immediately",
     severity: "critical",
   },
   {
@@ -87,7 +166,7 @@ const CODE_PATTERNS: Array<{
     severity: "critical",
   },
   {
-    pattern: /(?:AKIA|AIPA|ASIA|AROA|AIDA|ANIA)[A-Z0-9]{16}/g,
+    pattern: /(?:AKIA|AIPA|ASIA|AROA|AIDA)[A-Z0-9]{16}/g,
     description: "Hardcoded AWS access key detected",
     suggestion:
       "Revoke this AWS key immediately and move credentials to IAM roles or environment variables",
@@ -108,36 +187,81 @@ const CODE_PATTERNS: Array<{
     severity: "critical",
   },
 
-  // Environment variable misuse
+  // ── Weak Randomness ───────────────────────────────────────────
   {
-    pattern: /process\.env\.[A-Z_]+\s*[^|!?]/g,
-    description: "Environment variable accessed without fallback or validation",
+    pattern: /Math\.random\s*\(\s*\)/g,
+    description: "Math.random() is not cryptographically secure",
+    suggestion: "Use crypto.randomBytes() or crypto.randomUUID() instead",
+    severity: "medium",
+    languages: ["typescript", "javascript"],
+  },
+  {
+    pattern: /random\.random\s*\(\s*\)/g,
+    description: "random.random() is not cryptographically secure",
     suggestion:
-      "Validate environment variables at startup and provide fallbacks",
-    severity: "low",
+      "Use secrets.token_bytes() or secrets.token_hex() for cryptographic randomness",
+    severity: "medium",
+    languages: ["python"],
+  },
+
+  // ── Code Execution ────────────────────────────────────────────
+  {
+    pattern: /eval\s*\(/g,
+    description:
+      "eval() executes arbitrary code and is a critical security risk",
+    suggestion: "Remove eval() — refactor to avoid dynamic code execution",
+    severity: "critical",
+  },
+  {
+    pattern: /\bexec\s*\(/g,
+    description:
+      "exec() executes arbitrary code and is a critical security risk",
+    suggestion: "Remove exec() — refactor to avoid dynamic code execution",
+    severity: "critical",
+    languages: ["python"],
+  },
+
+  // ── Debug Mode ────────────────────────────────────────────────
+  {
+    pattern: /app\.run\s*\(.*debug\s*=\s*True/g,
+    description:
+      "Flask debug mode enabled — exposes interactive debugger in production",
+    suggestion:
+      "Set debug=False in production and use FLASK_ENV environment variable",
+    severity: "high",
+    languages: ["python"],
   },
 ];
 
 function getLineNumber(content: string, index: number): number {
-  return content.substring(0, index).split("\n").length;
+  return content.slice(0, index).split("\n").length;
+}
+
+function matchesLanguage(pattern: CodePattern, language: string): boolean {
+  if (!pattern.languages || pattern.languages.length === 0) return true;
+  return pattern.languages.includes(language);
 }
 
 export async function checkStaleness(
   content: string,
-  packages: ExtractedPackage[],
+  packages: Array<{ name: string; ecosystem: string; line: number }>,
+  language: string,
 ): Promise<VulnerabilityResult[]> {
   const results: VulnerabilityResult[] = [];
 
-  // Check code patterns directly
+  // Check code patterns
   for (const check of CODE_PATTERNS) {
-    check.pattern.lastIndex = 0;
+    if (!matchesLanguage(check, language)) continue;
+
+    const pattern = new RegExp(check.pattern.source, check.pattern.flags);
     let match;
-    while ((match = check.pattern.exec(content)) !== null) {
+    while ((match = pattern.exec(content)) !== null) {
+      const line = getLineNumber(content, match.index);
       results.push({
         type: "staleness",
         severity: check.severity,
-        lineStart: getLineNumber(content, match.index),
-        lineEnd: getLineNumber(content, match.index),
+        lineStart: line,
+        lineEnd: line,
         description: check.description,
         cveId: null,
         suggestion: check.suggestion,
@@ -146,20 +270,22 @@ export async function checkStaleness(
   }
 
   // Check packages against staleness records
+  const supabase = getServiceClient();
+
   for (const pkg of packages) {
-    const { data: packageRecord } = await serviceClient
+    const { data: pkgRecords } = await supabase
       .from("packages")
       .select("id")
       .eq("name", pkg.name)
       .eq("ecosystem", pkg.ecosystem)
-      .single();
+      .limit(1);
 
-    if (!packageRecord) continue;
+    if (!pkgRecords || pkgRecords.length === 0 || !pkgRecords[0]) continue;
 
-    const { data: records } = await serviceClient
+    const { data: records } = await supabase
       .from("staleness_records")
-      .select("*")
-      .eq("package_id", packageRecord.id);
+      .select("became_stale_at, reason, replacement")
+      .eq("package_id", pkgRecords[0].id);
 
     if (!records || records.length === 0) continue;
 

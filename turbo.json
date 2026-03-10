@@ -17,8 +17,12 @@
         "CRON_SECRET",
         "GITHUB_TOKEN",
         "NVD_API_KEY",
+        "ENGINE_URL",
+        "ENGINE_SECRET",
         "GITHUB_TOKEN",
-        "NVD_API_KEY"
+        "NVD_API_KEY",
+        "ENGINE_URL",
+        "ENGINE_SECRET"
       ]
     },
     "lint": {

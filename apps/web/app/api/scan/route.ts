@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "scanId is required" }, { status: 400 });
   }
 
-  // Verify scan belongs to user
   const { data: scan } = await supabase
     .from("scans")
     .select("id")
@@ -28,8 +27,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Scan not found" }, { status: 404 });
   }
 
-  // Run analysis — in V1 this is synchronous
-  // In V2 this becomes a background job
   await runScan(scanId);
 
   return NextResponse.json({ success: true });

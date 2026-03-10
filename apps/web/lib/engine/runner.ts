@@ -34,7 +34,7 @@ export async function runScan(scanId: string): Promise<void> {
       // Run CVE matching and staleness checking in parallel
       const [cveResults, stalenessResults] = await Promise.all([
         matchCves(packages),
-        checkStaleness(file.content, packages),
+        checkStaleness(file.content, packages, file.language),
       ]);
 
       const combined = [...cveResults, ...stalenessResults];
