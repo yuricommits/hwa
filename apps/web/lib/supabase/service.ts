@@ -1,12 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
+function createServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error("Supabase service role credentials are not set");
+  }
+
+  return createClient(url, key);
 }
 
-// Service role client — bypasses RLS
-// NEVER expose this to the client side
-export const serviceClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const serviceClient = createServiceClient();
