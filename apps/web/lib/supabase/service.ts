@@ -1,6 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-function createServiceClient() {
+let _client: SupabaseClient | null = null;
+
+export function getServiceClient(): SupabaseClient {
+  if (_client) return _client;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -8,7 +12,13 @@ function createServiceClient() {
     throw new Error("Supabase service role credentials are not set");
   }
 
-  return createClient(url, key);
+  _client = createClient(url, key);
+  return _client;
 }
 
-export const serviceClient = createServiceClient();
+// Keep named export for backwards compatibility
+export const serviceClient = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    return getServiceClient()[prop as keyof SupabaseClient];
+  },
+});
