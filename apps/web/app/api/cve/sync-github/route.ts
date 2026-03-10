@@ -150,3 +150,5 @@ export async function POST(request: NextRequest) {
     timestamp: new Date().toISOString(),
   });
 }
+
+export { POST as GET };
