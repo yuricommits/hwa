@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
+import ShareButton from "./share-button";
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: "var(--severity-critical)",
@@ -27,7 +28,6 @@ export default async function ScanPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fetch scan
   const { data: scan } = await supabase
     .from("scans")
     .select("*")
@@ -37,13 +37,11 @@ export default async function ScanPage({
 
   if (!scan) notFound();
 
-  // Fetch files
   const { data: files } = await supabase
     .from("scan_files")
     .select("*")
     .eq("scan_id", id);
 
-  // Fetch vulnerabilities
   const { data: vulnerabilities } = await supabase
     .from("vulnerabilities")
     .select("*")
@@ -93,28 +91,43 @@ export default async function ScanPage({
           </div>
         </div>
 
-        {/* Status badge */}
         <div style={{
-          display: "inline-flex",
+          display: "flex",
           alignItems: "center",
-          gap: "6px",
-          padding: "4px 12px",
-          border: `1px solid ${STATUS_COLORS[scan.status]}33`,
-          borderRadius: "999px",
-          fontSize: "11px",
-          fontFamily: "var(--font-mono)",
-          color: STATUS_COLORS[scan.status],
-          letterSpacing: "0.05em",
-          whiteSpace: "nowrap",
+          gap: "12px",
         }}>
-          <span style={{
-            width: "6px",
-            height: "6px",
-            borderRadius: "50%",
-            background: STATUS_COLORS[scan.status],
-            display: "inline-block",
-          }} />
-          {scan.status.toUpperCase()}
+          {/* Share button */}
+          {scan.status === "completed" && (
+            <ShareButton
+              scanId={scan.id}
+              isPublic={scan.is_public}
+              shareToken={scan.share_token}
+            />
+          )}
+
+          {/* Status badge */}
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "4px 12px",
+            border: `1px solid ${STATUS_COLORS[scan.status]}33`,
+            borderRadius: "999px",
+            fontSize: "11px",
+            fontFamily: "var(--font-mono)",
+            color: STATUS_COLORS[scan.status],
+            letterSpacing: "0.05em",
+            whiteSpace: "nowrap",
+          }}>
+            <span style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: STATUS_COLORS[scan.status],
+              display: "inline-block",
+            }} />
+            {scan.status.toUpperCase()}
+          </div>
         </div>
       </div>
 
@@ -212,7 +225,6 @@ export default async function ScanPage({
           borderRadius: "var(--radius-md)",
           overflow: "hidden",
         }}>
-          {/* Table header */}
           <div style={{
             display: "grid",
             gridTemplateColumns: "100px 80px 1fr 120px",
@@ -231,7 +243,6 @@ export default async function ScanPage({
             <div>LINE</div>
           </div>
 
-          {/* Rows */}
           {vulns.map((vuln, i) => (
             <div
               key={vuln.id}
@@ -247,7 +258,6 @@ export default async function ScanPage({
                 alignItems: "start",
               }}
             >
-              {/* Severity */}
               <div style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -268,7 +278,6 @@ export default async function ScanPage({
                 {vuln.severity.toUpperCase()}
               </div>
 
-              {/* Type */}
               <div style={{
                 fontSize: "11px",
                 fontFamily: "var(--font-mono)",
@@ -278,7 +287,6 @@ export default async function ScanPage({
                 {vuln.type.toUpperCase()}
               </div>
 
-              {/* Description */}
               <div>
                 <div style={{
                   fontSize: "0.8125rem",
@@ -312,14 +320,14 @@ export default async function ScanPage({
                 )}
               </div>
 
-              {/* Line */}
               <div style={{
                 fontSize: "11px",
                 fontFamily: "var(--font-mono)",
                 color: "var(--text-muted)",
               }}>
                 {vuln.line_start
-                  ? `L${vuln.line_start}${vuln.line_end && vuln.line_end !== vuln.line_start ? `–${vuln.line_end}` : ""}`
+                  ? `L${vuln.line_start}${vuln.line_end && vuln.line_end !== vuln.line_start
+                    ? `–${vuln.line_end}` : ""}`
                   : "—"
                 }
               </div>

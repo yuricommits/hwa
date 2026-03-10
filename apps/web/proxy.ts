@@ -14,15 +14,15 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
   const { pathname } = request.nextUrl;
@@ -32,10 +32,12 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const authRoutes = ["/login", "/signup"];
-  const publicRoutes = ["/"];
+  const isPublicRoute = pathname === "/" || pathname.startsWith("/report/");
 
   // Authenticated user trying to access auth pages → redirect to dashboard
   if (user && authRoutes.includes(pathname)) {
@@ -43,7 +45,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Unauthenticated user trying to access protected routes → redirect to login
-  if (!user && !authRoutes.includes(pathname) && !publicRoutes.includes(pathname)) {
+  if (!user && !authRoutes.includes(pathname) && !isPublicRoute) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
