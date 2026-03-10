@@ -19,10 +19,12 @@
         "NVD_API_KEY",
         "ENGINE_URL",
         "ENGINE_SECRET",
+        "LSP_API_KEY",
         "GITHUB_TOKEN",
         "NVD_API_KEY",
         "ENGINE_URL",
-        "ENGINE_SECRET"
+        "ENGINE_SECRET",
+        "LSP_API_KEY"
       ]
     },
     "lint": {

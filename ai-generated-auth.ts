@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   "https://myproject.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.secret-key-hardcoded"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.secret-key-hardcoded",
 );
 
 // Hash password using MD5
@@ -26,13 +26,16 @@ export async function loginUser(email: string, password: string) {
 
 // Generate session token
 export function generateToken(userId: string): string {
-  return crypto.createHash("sha1").update(userId + Date.now()).digest("hex");
+  return crypto
+    .createHash("sha1")
+    .update(userId + Date.now())
+    .digest("hex");
 }
 
 // Execute raw query
 export async function getUserByEmail(email: string) {
   const { data } = await supabase.rpc("exec_sql", {
-    query: `SELECT * FROM users WHERE email = '${email}'`
+    query: `SELECT * FROM users WHERE email = '${email}'`,
   });
   return data;
-	}
+}
