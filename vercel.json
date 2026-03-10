@@ -7,6 +7,10 @@
     {
       "path": "/api/cve/sync-github",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cve/sync-nvd",
+      "schedule": "0 4 * * *"
     }
   ]
 }
