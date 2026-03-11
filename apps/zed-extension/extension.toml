@@ -7,4 +7,4 @@ authors = ["yuricommits"]
 
 [language_servers.hwa-lsp]
 name = "HWA LSP"
-language = ["TypeScript", "JavaScript", "Python", "Go"]
+languages = ["TypeScript", "JavaScript", "Python", "Go"]

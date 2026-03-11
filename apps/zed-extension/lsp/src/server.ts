@@ -9,12 +9,23 @@ import {
   TextDocumentSyncKind,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import * as fs from "fs";
+import * as path from "path";
+
+const LOG_FILE = path.join(process.env.HOME ?? "/tmp", "hwa-lsp.log");
+
+function log(msg: string): void {
+  const line = `${new Date().toISOString()} ${msg}\n`;
+  fs.appendFileSync(LOG_FILE, line);
+}
 
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
 
 let apiUrl: string | null = null;
 let apiKey: string | null = null;
+
+log("HWA LSP starting");
 
 connection.onInitialize((params: InitializeParams): InitializeResult => {
   const settings = params.initializationOptions as {
@@ -24,6 +35,8 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
 
   apiUrl = settings?.apiUrl ?? null;
   apiKey = settings?.apiKey ?? null;
+
+  log(`HWA initialized apiUrl=${apiUrl} apiKey=${apiKey ? "set" : "NOT SET"}`);
 
   return {
     capabilities: {
@@ -66,13 +79,17 @@ type ScanResponse = {
 };
 
 async function scanDocument(document: TextDocument): Promise<void> {
+  log(`HWA scanning ${document.uri}`);
+
   if (!apiUrl || !apiKey) {
-    connection.console.warn("HWA: apiUrl and apiKey not configured");
+    log("HWA apiUrl or apiKey not set — check Zed settings");
     return;
   }
 
   const content = document.getText();
   const language = detectLanguage(document.uri);
+
+  log(`HWA language=${language} content=${content.length} chars`);
 
   try {
     const response = await fetch(`${apiUrl}/api/lsp/scan`, {
@@ -84,12 +101,16 @@ async function scanDocument(document: TextDocument): Promise<void> {
       body: JSON.stringify({ content, language }),
     });
 
+    log(`HWA API status=${response.status}`);
+
     if (!response.ok) {
-      connection.console.error(`HWA: scan failed with status ${response.status}`);
+      log(`HWA API error: ${response.status}`);
       return;
     }
 
     const data = (await response.json()) as ScanResponse;
+    log(`HWA found ${data.vulnerabilities?.length ?? 0} vulnerabilities`);
+
     const diagnostics: Diagnostic[] = [];
 
     for (const vuln of data.vulnerabilities ?? []) {
@@ -112,19 +133,25 @@ async function scanDocument(document: TextDocument): Promise<void> {
       });
     }
 
+    log(`HWA sending ${diagnostics.length} diagnostics`);
     connection.sendDiagnostics({ uri: document.uri, diagnostics });
   } catch (err) {
-    connection.console.error(`HWA: scan error — ${String(err)}`);
+    log(`HWA error: ${String(err)}`);
   }
 }
 
-// Scan on save
 documents.onDidSave((event) => {
+  log("HWA onDidSave triggered");
   void scanDocument(event.document);
 });
 
-// Scan on open
 documents.onDidOpen((event) => {
+  log("HWA onDidOpen triggered");
+  void scanDocument(event.document);
+});
+
+documents.onDidChangeContent((event) => {
+  log("HWA onDidChangeContent triggered");
   void scanDocument(event.document);
 });
 

@@ -12,18 +12,14 @@ impl zed::Extension for HwaExtension {
         _language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
     ) -> Result<zed::Command> {
-        // Find node in PATH
         let node_path = worktree
             .which("node")
             .ok_or("node not found in PATH — please install Node.js")?;
 
-        // LSP server will be bundled at this path
-        let server_path = "lsp/dist/server.js";
-
         Ok(zed::Command {
             command: node_path,
             args: vec![
-                server_path.to_string(),
+                "/home/kim-yuri/north/hwa/apps/zed-extension/lsp/dist/server.js".to_string(),
                 "--stdio".to_string(),
             ],
             env: vec![],
