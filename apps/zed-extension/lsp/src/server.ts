@@ -125,7 +125,7 @@ async function scanDocument(document: TextDocument): Promise<void> {
         severity: mapSeverity(vuln.severity),
         range: {
           start: { line: startLine, character: 0 },
-          end: { line: endLine, character: Number.MAX_SAFE_INTEGER },
+          end: { line: endLine, character: 0 },
         },
         message,
         source: "hwa",
