@@ -1,0 +1,121 @@
+name: HWA Reusable Scan
+
+on:
+  workflow_call:
+    inputs:
+      fail_on_critical:
+        description: "Fail the workflow if critical findings are found"
+        type: boolean
+        default: true
+      scan_path:
+        description: "Path to scan (default: changed files only)"
+        type: string
+        default: ""
+    secrets:
+      HWA_API_KEY:
+        description: "Optional HWA API key for full CVE matching"
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  hwa-scan:
+    name: HWA Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed
+        if: inputs.scan_path == ''
+        run: |
+          git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep -E '\.(ts|tsx|js|jsx|py|go)$' \
+            | tr '\n' ' ' \
+            > changed_files.txt
+          echo "files=$(cat changed_files.txt)" >> $GITHUB_OUTPUT
+
+      - name: Install hwa
+        run: |
+          curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.0/hwa-linux-amd64 \
+            -o /usr/local/bin/hwa
+          chmod +x /usr/local/bin/hwa
+
+      - name: Scan
+        id: scan
+        run: |
+          TARGET="${{ inputs.scan_path != '' && inputs.scan_path || steps.changed.outputs.files }}"
+
+          if [ -z "$TARGET" ]; then
+            echo "No files to scan"
+            echo '[]' > hwa-results.json
+            echo "found_critical=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          hwa scan $TARGET --json > hwa-results.json 2>&1 || true
+
+          CRITICAL=$(cat hwa-results.json | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          print(len([x for x in (d if isinstance(d, list) else []) if x.get('severity')=='critical']))
+          ")
+
+          echo "critical_count=$CRITICAL" >> $GITHUB_OUTPUT
+          [ "$CRITICAL" -gt "0" ] && echo "found_critical=true" >> $GITHUB_OUTPUT || echo "found_critical=false" >> $GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hwa-results
+          path: hwa-results.json
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('hwa-results.json', 'utf8'));
+            const icon = { critical: '🔴', high: '🟠', medium: '🟡', low: '🔵' };
+
+            if (!Array.isArray(results) || results.length === 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: '## ✅ HWA Security Scan\n\nNo vulnerabilities found.'
+              });
+              return;
+            }
+
+            const critical = results.filter(r => r.severity === 'critical').length;
+            let body = `## ${critical > 0 ? '🚨' : '⚠️'} HWA Security Scan\n\n`;
+            if (critical > 0) body += `> **${critical} critical finding(s) — this PR is blocked.**\n\n`;
+
+            for (const r of results) {
+              body += `**${icon[r.severity] ?? '⚪'} ${r.severity.toUpperCase()}** — \`${r.file}\` L${r.line}\n`;
+              body += `${r.description}\n> → ${r.suggestion}\n\n`;
+            }
+
+            body += `---\n*[hwa](https://github.com/yuricommits/hwa)*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+      - name: Fail on critical
+        if: inputs.fail_on_critical == true && steps.scan.outputs.found_critical == 'true'
+        run: |
+          echo "::error::HWA found ${{ steps.scan.outputs.critical_count }} critical vulnerability(s)."
+          exit 1
