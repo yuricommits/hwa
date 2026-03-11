@@ -1,159 +1,250 @@
-# Turborepo starter
+# hwa
 
-This Turborepo starter is maintained by the Turborepo core team.
+AI code vulnerability tracker. Detects CVEs, staleness, and hardcoded secrets in AI-generated code.
 
-## Using this example
+**[hwa-kappa.vercel.app](https://hwa-kappa.vercel.app)**
 
-Run the following command:
+---
 
-```sh
-npx create-turbo@latest
+## What it does
+
+AI-generated code ships fast but often contains security issues — hardcoded secrets, deprecated cryptography, SQL injection, and packages with known CVEs. hwa catches these before they reach production.
+
+## Features
+
+- **CVE detection** — cross-references imported packages against OSV, GitHub Advisory DB, and NVD
+- **Pattern matching** — detects hardcoded secrets, MD5/SHA1, SQL injection, command injection, unsafe deserialization, and more
+- **Language-aware** — TypeScript, JavaScript, Python, Go
+- **Shareable reports** — public report links for sharing scan results
+- **Daily CVE sync** — automated pipeline keeps vulnerability data fresh
+
+---
+
+## Stack
+
+```
+apps/
+  web/                    → Next.js 16 (TypeScript) — Vercel
+  analysis-engine/        → Go HTTP service — V2
+  cli/                    → Go CLI binary
+  zed-extension/          → Zed IDE extension + LSP server
+packages/
+  database/               → Drizzle ORM + Supabase
+  types/                  → Shared TypeScript types
+  ui/                     → Shared UI components
 ```
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+## CLI
 
-### Apps and Packages
+Standalone binary — no server, no API key, no internet required.
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Install
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+**Linux:**
+```bash
+curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.0/hwa-linux-amd64 -o hwa
+chmod +x hwa
+sudo mv hwa /usr/local/bin/
 ```
 
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+**macOS (Apple Silicon):**
+```bash
+curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.0/hwa-darwin-arm64 -o hwa
+chmod +x hwa
+sudo mv hwa /usr/local/bin/
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
+**macOS (Intel):**
+```bash
+curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.0/hwa-darwin-amd64 -o hwa
+chmod +x hwa
+sudo mv hwa /usr/local/bin/
 ```
 
-Without global `turbo`:
+### Usage
 
-```sh
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+```bash
+# Scan a single file
+hwa scan auth.ts
+
+# Scan a directory
+hwa scan src/
+
+# JSON output
+hwa scan . --json
+
+# Version
+hwa version
 ```
 
-### Develop
+### Exit codes
 
-To develop all apps and packages, run the following command:
+| Code | Meaning |
+|---|---|
+| `0` | No critical findings |
+| `1` | Critical findings found |
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+---
 
-```sh
-cd my-turborepo
-turbo dev
+## CI/CD — GitHub Actions
+
+Add to your repo to block PRs with critical vulnerabilities.
+
+Create `.github/workflows/security.yml`:
+
+```yaml
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  hwa:
+    uses: yuricommits/hwa/.github/workflows/reusable-scan.yml@main
+    with:
+      fail_on_critical: true
 ```
 
-Without global `turbo`, use your package manager:
+### What it does
 
-```sh
-cd my-turborepo
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+- Detects changed `.ts` `.js` `.py` `.go` files in the PR
+- Downloads the `hwa` binary
+- Scans for vulnerabilities
+- Comments findings on the PR with file + line numbers
+- Uploads JSON results as artifact
+- Blocks merge if critical findings found
+
+### Options
+
+| Input | Default | Description |
+|---|---|---|
+| `fail_on_critical` | `true` | Block PR if critical findings exist |
+| `scan_path` | changed files | Path to scan — leave empty for changed files only |
+
+---
+
+## Zed IDE Extension
+
+Scans code as you type and shows inline diagnostics.
+
+### Install
+
+`Ctrl+Shift+P` → **"zed: install dev extension"** → select `apps/zed-extension`
+
+### Configure
+
+Add to your global Zed settings (`~/.config/zed/settings.json`):
+
+```json
+{
+  "lsp": {
+    "hwa-lsp": {
+      "initialization_options": {
+        "apiUrl": "https://hwa-kappa.vercel.app",
+        "apiKey": "your-lsp-api-key"
+      }
+    }
+  }
+}
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Get your `apiKey` from your hwa dashboard settings.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+The project `.zed/settings.json` configures language server order — no credentials needed there.
 
-```sh
-turbo dev --filter=web
+---
+
+## CVE Sources
+
+| Source | Coverage | Schedule |
+|---|---|---|
+| [OSV](https://osv.dev) | Cross-ecosystem | Daily 2AM UTC |
+| [GitHub Advisory DB](https://github.com/advisories) | npm-heavy, high quality | Daily 3AM UTC |
+| [NVD](https://nvd.nist.gov) | Authoritative CVSS scores | Daily 4AM UTC |
+
+---
+
+## What it detects
+
+| Category | Patterns |
+|---|---|
+| **Secrets** | Passwords, API keys, AWS keys, GitHub tokens, JWTs, OpenAI/Stripe keys |
+| **Cryptography** | MD5, SHA1 |
+| **Injection** | SQL injection, command injection (`shell=True`, `os.system`) |
+| **Deserialization** | `pickle.load`, `yaml.load` without Loader |
+| **SSL/TLS** | `verify=False`, `rejectUnauthorized: false` |
+| **Randomness** | `Math.random()`, `random.random()` |
+| **Code execution** | `eval()`, `exec()` |
+| **Misc** | Flask debug mode |
+
+---
+
+## Development
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm 10+
+- Go 1.21+
+
+### Setup
+
+```bash
+git clone https://github.com/yuricommits/hwa
+cd hwa
+pnpm install
+cp .env.example .env
+# Fill in Supabase credentials
+pnpm dev
 ```
 
-Without global `turbo`:
+### Environment variables
 
-```sh
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+```bash
+DATABASE_URL=
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+CRON_SECRET=
+GITHUB_TOKEN=
+NVD_API_KEY=
+LSP_API_KEY=
 ```
 
-### Remote Caching
+### Commands
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
+```bash
+pnpm dev          # Start Next.js dev server
+pnpm build        # Build all packages
+pnpm check-types  # TypeScript type check
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+## Roadmap
+
+```
+V1 (current)
+✅ Web dashboard
+✅ CVE pipeline (OSV + GitHub + NVD)
+✅ CLI tool
+✅ Zed IDE extension
+✅ GitHub Actions CI/CD
+
+V2
+⬜ Go analysis engine deployment
+⬜ IDE plugin publishing (Zed registry)
+⬜ CI/CD integration (GitLab, Bitbucket)
+⬜ More language support (Ruby, Rust, Java)
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+---
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## License
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+MIT
