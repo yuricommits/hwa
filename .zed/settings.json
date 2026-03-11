@@ -1,0 +1,16 @@
+{
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["typescript-language-server", "hwa-lsp"]
+    },
+    "JavaScript": {
+      "language_servers": ["typescript-language-server", "hwa-lsp"]
+    },
+    "Python": {
+      "language_servers": ["basedpyright", "hwa-lsp"]
+    },
+    "Go": {
+      "language_servers": ["gopls", "hwa-lsp"]
+    }
+  }
+}
