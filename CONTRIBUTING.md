@@ -33,7 +33,7 @@ All PRs are automatically scanned by hwa itself. PRs with critical findings will
 
 ## Reporting vulnerabilities
 
-Please do not open public issues for security vulnerabilities. Email directly instead.
+Please do not open public issues for security vulnerabilities. Instead, use [GitHub private vulnerability reporting](https://github.com/yuricommits/hwa/security/advisories/new).
 
 ## Questions
 
