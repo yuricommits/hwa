@@ -1,9 +1,11 @@
 id = "hwa"
 name = "HWA"
-description = "AI code vulnerability scanner — detects CVEs, staleness, and hardcoded secrets"
+description = "Detects CVEs, staleness, and hardcoded secrets"
 version = "0.1.0"
 schema_version = 1
 authors = ["yuricommits"]
+
+repository = "https://github.com/yuricommits/hwa"
 
 [language_servers.hwa-lsp]
 name = "HWA LSP"
