@@ -167,8 +167,8 @@ var Patterns = []Pattern{
 
 	// ── Code Execution ────────────────────────────────────────────
 	{
-		Regex:       regexp.MustCompile(`eval\s*\(`),
-		Description: "eval() executes arbitrary code",
+		Regex:       regexp.MustCompile(`eval\s*\(`),  // hwa-ignore
+		Description: "eval() executes arbitrary code", // hwa-ignore
 		Suggestion:  "Remove eval() and refactor",
 		Severity:    "critical",
 	},

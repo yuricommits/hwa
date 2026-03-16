@@ -48,6 +48,20 @@ func lineNumber(content string, index int) int {
 	return strings.Count(content[:index], "\n") + 1
 }
 
+func isIgnoredLine(lines []string, lineNum int) bool {
+	if lineNum <= 0 || lineNum > len(lines) {
+		return false
+	}
+	// Check current line and previous line for hwa-ignore
+	if strings.Contains(lines[lineNum-1], "hwa-ignore") {
+		return true
+	}
+	if lineNum > 1 && strings.Contains(lines[lineNum-2], "hwa-ignore") {
+		return true
+	}
+	return false
+}
+
 func ScanFile(path string) ([]Finding, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -56,6 +70,7 @@ func ScanFile(path string) ([]Finding, error) {
 
 	content := string(data)
 	language := DetectLanguage(path)
+	lines := strings.Split(content, "\n")
 	var findings []Finding
 
 	for _, pattern := range Patterns {
@@ -63,9 +78,13 @@ func ScanFile(path string) ([]Finding, error) {
 			continue
 		}
 		for _, loc := range pattern.Regex.FindAllStringIndex(content, -1) {
+			line := lineNumber(content, loc[0])
+			if isIgnoredLine(lines, line) {
+				continue
+			}
 			findings = append(findings, Finding{
 				File:        path,
-				Line:        lineNumber(content, loc[0]),
+				Line:        line,
 				Severity:    pattern.Severity,
 				Description: pattern.Description,
 				Suggestion:  pattern.Suggestion,

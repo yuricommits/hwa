@@ -126,11 +126,11 @@ const CODE_PATTERNS: CodePattern[] = [
     languages: ["python"],
   },
   {
-    pattern: /rejectUnauthorized\s*:\s*false/g,
+    pattern: /rejectUnauthorized\s*:\s*false/g, // hwa-ignore
     description:
       "SSL certificate verification disabled — vulnerable to MITM attacks",
     suggestion:
-      "Remove rejectUnauthorized: false and use proper SSL certificates",
+      "Remove rejectUnauthorized: false and use proper SSL certificates", // hwa-ignore
     severity: "high",
     languages: ["typescript", "javascript"],
   },
@@ -158,8 +158,7 @@ const CODE_PATTERNS: CodePattern[] = [
     severity: "critical",
   },
   {
-    pattern:
-      /eyJ[a-zA-Z0-9_\-]{10,}\.[a-zA-Z0-9_\-]{4,}(?:\.[a-zA-Z0-9_\-]*)?/g,
+    pattern: /eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{4,}(?:\.[a-zA-Z0-9_-]*)?/g,
     description: "Hardcoded JWT token detected in source code",
     suggestion:
       "Remove the JWT — it likely contains sensitive claims and must be rotated",
@@ -189,7 +188,7 @@ const CODE_PATTERNS: CodePattern[] = [
 
   // ── Weak Randomness ───────────────────────────────────────────
   {
-    pattern: /Math\.random\s*\(\s*\)/g,
+    pattern: /Math\.random\s*\(\s*\)/g, // hwa-ignore
     description: "Math.random() is not cryptographically secure",
     suggestion: "Use crypto.randomBytes() or crypto.randomUUID() instead",
     severity: "medium",
@@ -206,9 +205,9 @@ const CODE_PATTERNS: CodePattern[] = [
 
   // ── Code Execution ────────────────────────────────────────────
   {
-    pattern: /eval\s*\(/g,
+    pattern: /eval\s*\(/g, // hwa-ignore
     description:
-      "eval() executes arbitrary code and is a critical security risk",
+      "eval() executes arbitrary code and is a critical security risk", // hwa-ignore
     suggestion: "Remove eval() — refactor to avoid dynamic code execution",
     severity: "critical",
   },
