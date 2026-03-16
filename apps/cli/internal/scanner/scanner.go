@@ -3,6 +3,7 @@ package scanner
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -36,12 +37,7 @@ func matchesLanguage(p Pattern, language string) bool {
 	if len(p.Languages) == 0 {
 		return true
 	}
-	for _, l := range p.Languages {
-		if l == language {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(p.Languages, language)
 }
 
 func lineNumber(content string, index int) int {
