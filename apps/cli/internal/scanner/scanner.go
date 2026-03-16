@@ -17,6 +17,8 @@ type Finding struct {
 func DetectLanguage(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
+	case ".rs":
+		return "rust"
 	case ".ts", ".tsx":
 		return "typescript"
 	case ".js", ".jsx":

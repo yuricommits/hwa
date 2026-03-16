@@ -9,6 +9,7 @@ const LANGUAGES = [
   { value: "javascript", label: "JavaScript" },
   { value: "python", label: "Python" },
   { value: "go", label: "Go" },
+  { value: "rust", label: "Rust" },
 ];
 
 const EXTENSION_MAP: Record<string, string> = {
@@ -18,6 +19,7 @@ const EXTENSION_MAP: Record<string, string> = {
   jsx: "javascript",
   py: "python",
   go: "go",
+  rs: "rust",
 };
 
 type Tab = "paste" | "upload" | "history";
@@ -104,7 +106,7 @@ export default function ScansPage() {
           low: v.filter((x) => x.severity === "low").length,
           total: v.length,
         };
-      })
+      }),
     );
 
     setScans(enriched);
@@ -141,12 +143,22 @@ export default function ScansPage() {
     setStatus("Creating scan...");
 
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      router.push("/login");
+      return;
+    }
 
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .insert({ user_id: user.id, status: "pending", language, is_public: false })
+      .insert({
+        user_id: user.id,
+        status: "pending",
+        language,
+        is_public: false,
+      })
       .select()
       .single();
 
@@ -159,7 +171,12 @@ export default function ScansPage() {
 
     const { error: fileError } = await supabase
       .from("scan_files")
-      .insert({ scan_id: scan.id, filename: filename || "untitled", content: code, language });
+      .insert({
+        scan_id: scan.id,
+        filename: filename || "untitled",
+        content: code,
+        language,
+      });
 
     if (fileError) {
       setError(fileError.message);
@@ -190,13 +207,15 @@ export default function ScansPage() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{
-          fontSize: "1.25rem",
-          fontWeight: 600,
-          letterSpacing: "-0.02em",
-          color: "var(--text-primary)",
-          marginBottom: "0.25rem",
-        }}>
+        <h1
+          style={{
+            fontSize: "1.25rem",
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            color: "var(--text-primary)",
+            marginBottom: "0.25rem",
+          }}
+        >
           Scans
         </h1>
         <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)" }}>
@@ -205,15 +224,19 @@ export default function ScansPage() {
       </div>
 
       {/* Card */}
-      <div style={{
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-md)",
-        background: "var(--surface)",
-        overflow: "hidden",
-        maxWidth: "860px",
-      }}>
+      <div
+        style={{
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-md)",
+          background: "var(--surface)",
+          overflow: "hidden",
+          maxWidth: "860px",
+        }}
+      >
         {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid var(--border)" }}>
+        <div
+          style={{ display: "flex", borderBottom: "1px solid var(--border)" }}
+        >
           {(["paste", "upload", "history"] as Tab[]).map((t) => (
             <button
               key={t}
@@ -224,15 +247,21 @@ export default function ScansPage() {
                 fontWeight: 500,
                 background: "none",
                 border: "none",
-                borderBottom: tab === t
-                  ? "2px solid var(--text-primary)"
-                  : "2px solid transparent",
-                color: tab === t ? "var(--text-primary)" : "var(--text-secondary)",
+                borderBottom:
+                  tab === t
+                    ? "2px solid var(--text-primary)"
+                    : "2px solid transparent",
+                color:
+                  tab === t ? "var(--text-primary)" : "var(--text-secondary)",
                 cursor: "pointer",
                 marginBottom: "-1px",
               }}
             >
-              {t === "paste" ? "Paste Code" : t === "upload" ? "Upload File" : "History"}
+              {t === "paste"
+                ? "Paste Code"
+                : t === "upload"
+                  ? "Upload File"
+                  : "History"}
             </button>
           ))}
         </div>
@@ -241,39 +270,45 @@ export default function ScansPage() {
         {tab === "history" && (
           <div>
             {loadingHistory ? (
-              <div style={{
-                padding: "3rem",
-                textAlign: "center",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                color: "var(--accent-cyan)",
-                letterSpacing: "0.1em",
-              }}>
+              <div
+                style={{
+                  padding: "3rem",
+                  textAlign: "center",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  color: "var(--accent-cyan)",
+                  letterSpacing: "0.1em",
+                }}
+              >
                 LOADING...
               </div>
             ) : scans.length === 0 ? (
-              <div style={{
-                padding: "3rem",
-                textAlign: "center",
-                fontSize: "0.875rem",
-                color: "var(--text-secondary)",
-              }}>
+              <div
+                style={{
+                  padding: "3rem",
+                  textAlign: "center",
+                  fontSize: "0.875rem",
+                  color: "var(--text-secondary)",
+                }}
+              >
                 No scans yet
               </div>
             ) : (
               <div>
                 {/* Table header */}
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 120px 180px 120px",
-                  gap: "1rem",
-                  padding: "10px 1.25rem",
-                  borderBottom: "1px solid var(--border)",
-                  fontSize: "0.7rem",
-                  color: "var(--text-muted)",
-                  fontFamily: "var(--font-mono)",
-                  letterSpacing: "0.08em",
-                }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 120px 180px 120px",
+                    gap: "1rem",
+                    padding: "10px 1.25rem",
+                    borderBottom: "1px solid var(--border)",
+                    fontSize: "0.7rem",
+                    color: "var(--text-muted)",
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "0.08em",
+                  }}
+                >
                   <div>FILE</div>
                   <div>STATUS</div>
                   <div>FINDINGS</div>
@@ -289,64 +324,78 @@ export default function ScansPage() {
                       gridTemplateColumns: "1fr 120px 180px 120px",
                       gap: "1rem",
                       padding: "1rem 1.25rem",
-                      borderBottom: i < scans.length - 1
-                        ? "1px solid var(--border)"
-                        : "none",
-                      background: i % 2 === 0 ? "var(--surface)" : "transparent",
+                      borderBottom:
+                        i < scans.length - 1
+                          ? "1px solid var(--border)"
+                          : "none",
+                      background:
+                        i % 2 === 0 ? "var(--surface)" : "transparent",
                       alignItems: "center",
                       cursor: "pointer",
                     }}
                   >
                     {/* File */}
                     <div>
-                      <div style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "0.8125rem",
-                        color: "var(--text-primary)",
-                        marginBottom: "2px",
-                      }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "0.8125rem",
+                          color: "var(--text-primary)",
+                          marginBottom: "2px",
+                        }}
+                      >
                         {scan.filename ?? "untitled"}
                       </div>
-                      <div style={{
-                        fontSize: "0.7rem",
-                        color: "var(--text-muted)",
-                      }}>
+                      <div
+                        style={{
+                          fontSize: "0.7rem",
+                          color: "var(--text-muted)",
+                        }}
+                      >
                         {scan.id.slice(0, 8).toUpperCase()} · {scan.language}
                       </div>
                     </div>
 
                     {/* Status */}
-                    <div style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      fontSize: "11px",
-                      fontFamily: "var(--font-mono)",
-                      color: STATUS_COLORS[scan.status],
-                      letterSpacing: "0.05em",
-                    }}>
-                      <span style={{
-                        width: "5px",
-                        height: "5px",
-                        borderRadius: "50%",
-                        background: STATUS_COLORS[scan.status],
-                        display: "inline-block",
-                      }} />
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        fontSize: "11px",
+                        fontFamily: "var(--font-mono)",
+                        color: STATUS_COLORS[scan.status],
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: "5px",
+                          height: "5px",
+                          borderRadius: "50%",
+                          background: STATUS_COLORS[scan.status],
+                          display: "inline-block",
+                        }}
+                      />
                       {scan.status.toUpperCase()}
                     </div>
 
                     {/* Findings */}
-                    <div style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
-                    }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        alignItems: "center",
+                      }}
+                    >
                       {scan.total === 0 ? (
-                        <span style={{
-                          fontSize: "0.75rem",
-                          color: "var(--text-muted)",
-                          fontFamily: "var(--font-mono)",
-                        }}>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--text-muted)",
+                            fontFamily: "var(--font-mono)",
+                          }}
+                        >
                           —
                         </span>
                       ) : (
@@ -373,10 +422,12 @@ export default function ScansPage() {
                     </div>
 
                     {/* Date */}
-                    <div style={{
-                      fontSize: "0.75rem",
-                      color: "var(--text-muted)",
-                    }}>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--text-muted)",
+                      }}
+                    >
                       {new Date(scan.created_at).toLocaleDateString()}
                     </div>
                   </div>
@@ -389,14 +440,23 @@ export default function ScansPage() {
         {/* Paste tab */}
         {(tab === "paste" || tab === "upload") && (
           <div style={{ padding: "1.5rem" }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "1rem",
-              marginBottom: "1rem",
-            }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "1rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+              >
+                <label
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
                   Language
                 </label>
                 <select
@@ -415,14 +475,24 @@ export default function ScansPage() {
                   }}
                 >
                   {LANGUAGES.map((l) => (
-                    <option key={l.value} value={l.value}>{l.label}</option>
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                  Filename <span style={{ color: "var(--text-muted)" }}>(optional)</span>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+              >
+                <label
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Filename{" "}
+                  <span style={{ color: "var(--text-muted)" }}>(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -444,8 +514,15 @@ export default function ScansPage() {
             </div>
 
             {tab === "paste" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+              >
+                <label
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
                   Code
                 </label>
                 <textarea
@@ -479,43 +556,59 @@ export default function ScansPage() {
                   padding: "3rem",
                   textAlign: "center",
                   cursor: "pointer",
-                  background: file ? "rgba(34, 197, 94, 0.05)" : "var(--surface-raised)",
+                  background: file
+                    ? "rgba(34, 197, 94, 0.05)"
+                    : "var(--surface-raised)",
                 }}
               >
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".ts,.tsx,.js,.jsx,.py,.go"
+                  accept=".ts,.tsx,.js,.jsx,.py,.go,.rs"
                   onChange={handleFileChange}
                   style={{ display: "none" }}
                 />
                 {file ? (
                   <div>
-                    <div style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "0.875rem",
-                      color: "var(--accent-green)",
-                      marginBottom: "0.5rem",
-                    }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "0.875rem",
+                        color: "var(--accent-green)",
+                        marginBottom: "0.5rem",
+                      }}
+                    >
                       ✓ {file.name}
                     </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--text-muted)",
+                      }}
+                    >
                       {(file.size / 1024).toFixed(1)} KB · {language}
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <div style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "11px",
-                      color: "var(--text-muted)",
-                      letterSpacing: "0.1em",
-                      marginBottom: "0.75rem",
-                    }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "11px",
+                        color: "var(--text-muted)",
+                        letterSpacing: "0.1em",
+                        marginBottom: "0.75rem",
+                      }}
+                    >
                       CLICK TO UPLOAD
                     </div>
-                    <div style={{ fontSize: "0.8125rem", color: "var(--text-secondary)" }}>
-                      .ts · .tsx · .js · .jsx · .py · .go
+                    <div
+                      style={{
+                        fontSize: "0.8125rem",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      .ts · .tsx · .js · .jsx · .py · .go · .rs
                     </div>
                   </div>
                 )}
@@ -523,32 +616,38 @@ export default function ScansPage() {
             )}
 
             {error && (
-              <div style={{
-                marginTop: "1rem",
-                padding: "10px 12px",
-                background: "rgba(255, 59, 59, 0.1)",
-                border: "1px solid rgba(255, 59, 59, 0.3)",
-                borderRadius: "var(--radius)",
-                fontSize: "0.8rem",
-                color: "var(--accent-red)",
-                fontFamily: "var(--font-mono)",
-              }}>
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "10px 12px",
+                  background: "rgba(255, 59, 59, 0.1)",
+                  border: "1px solid rgba(255, 59, 59, 0.3)",
+                  borderRadius: "var(--radius)",
+                  fontSize: "0.8rem",
+                  color: "var(--accent-red)",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
                 {error}
               </div>
             )}
 
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: "1.5rem",
-            }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: "1.5rem",
+              }}
+            >
               {status && (
-                <div style={{
-                  fontSize: "0.8rem",
-                  color: "var(--accent-cyan)",
-                  fontFamily: "var(--font-mono)",
-                }}>
+                <div
+                  style={{
+                    fontSize: "0.8rem",
+                    color: "var(--accent-cyan)",
+                    fontFamily: "var(--font-mono)",
+                  }}
+                >
                   ⟳ {status}
                 </div>
               )}

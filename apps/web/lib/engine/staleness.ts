@@ -231,6 +231,55 @@ const CODE_PATTERNS: CodePattern[] = [
     severity: "high",
     languages: ["python"],
   },
+
+  // ── Rust ─────────────────────────────────────────────────────
+  {
+    pattern:
+      /(?:api_key|apikey|api-key|secret|password|token)\s*=\s*"[^"]{4,}"/gi,
+    description: "Hardcoded secret detected in Rust source",
+    suggestion:
+      "Use environment variables via std::env::var() or the dotenvy crate",
+    severity: "critical" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /unsafe\s*\{/g,
+    description:
+      "Unsafe block detected — bypasses Rust memory safety guarantees",
+    suggestion:
+      "Avoid unsafe blocks unless absolutely necessary and document why",
+    severity: "high" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /\.unwrap\(\)/g,
+    description: "unwrap() will panic if the value is None or Err",
+    suggestion: "Use match, if let, unwrap_or(), or ? operator instead",
+    severity: "medium" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /\.expect\s*\(\s*"[^"]*"\s*\)/g,
+    description: "expect() will panic if the value is None or Err",
+    suggestion: "Use proper error handling with match or the ? operator",
+    severity: "medium" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /rand::random\s*::</g,
+    description: "rand::random is not cryptographically secure",
+    suggestion:
+      "Use rand::rngs::OsRng or the ring crate for cryptographic randomness",
+    severity: "medium" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /println!\s*\(.*(?:password|secret|token|key)/gi,
+    description: "Possible sensitive data being printed to stdout",
+    suggestion: "Remove debug prints containing sensitive data before shipping",
+    severity: "medium" as const,
+    languages: ["rust"],
+  },
 ];
 
 function getLineNumber(content: string, index: number): number {

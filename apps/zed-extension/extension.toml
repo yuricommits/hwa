@@ -9,4 +9,4 @@ repository = "https://github.com/yuricommits/hwa"
 
 [language_servers.hwa-lsp]
 name = "HWA LSP"
-languages = ["TypeScript", "JavaScript", "Python", "Go"]
+languages = ["TypeScript", "JavaScript", "Python", "Go", "Rust"]
