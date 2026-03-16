@@ -14,7 +14,7 @@ AI-generated code ships fast but often contains security issues — hardcoded se
 
 - **CVE detection** — cross-references imported packages against OSV, GitHub Advisory DB, and NVD
 - **Pattern matching** — detects hardcoded secrets, MD5/SHA1, SQL injection, command injection, unsafe deserialization, and more
-- **Language-aware** — TypeScript, JavaScript, Python, Go
+- **Language-aware** — TypeScript, JavaScript, Python, Go, Rust
 - **Shareable reports** — public report links for sharing scan results
 - **Daily CVE sync** — automated pipeline keeps vulnerability data fresh
 
@@ -44,21 +44,21 @@ Standalone binary — no server, no API key, no internet required.
 
 **Linux:**
 ```bash
-curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.0/hwa-linux-amd64 -o hwa
+curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.1/hwa-linux-amd64 -o hwa
 chmod +x hwa
 sudo mv hwa /usr/local/bin/
 ```
 
 **macOS (Apple Silicon):**
 ```bash
-curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.0/hwa-darwin-arm64 -o hwa
+curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.1/hwa-darwin-arm64 -o hwa
 chmod +x hwa
 sudo mv hwa /usr/local/bin/
 ```
 
 **macOS (Intel):**
 ```bash
-curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.0/hwa-darwin-amd64 -o hwa
+curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.1/hwa-darwin-amd64 -o hwa
 chmod +x hwa
 sudo mv hwa /usr/local/bin/
 ```
@@ -110,7 +110,7 @@ jobs:
 
 ### What it does
 
-- Detects changed `.ts` `.js` `.py` `.go` files in the PR
+- Detects changed `.ts` `.js` `.py` `.go` `.rs` files in the PR
 - Downloads the `hwa` binary
 - Scans for vulnerabilities
 - Comments findings on the PR with file + line numbers
@@ -235,12 +235,13 @@ V1 (current)
 ✅ CLI tool
 ✅ Zed IDE extension
 ✅ GitHub Actions CI/CD
+✅ Rust language support
 
 V2
 ⬜ Go analysis engine deployment
 ⬜ IDE plugin publishing (Zed registry)
 ⬜ CI/CD integration (GitLab, Bitbucket)
-⬜ More language support (Ruby, Rust, Java)
+⬜ More language support (Ruby, Shell, Java)
 ```
 
 ---
