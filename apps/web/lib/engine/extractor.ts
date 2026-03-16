@@ -139,6 +139,7 @@ function getEcosystem(language: string): Ecosystem {
   switch (language) {
     case "python": return "pypi";
     case "go": return "go";
+    case "rust": return "cargo";
     default: return "npm";
   }
 }

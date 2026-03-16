@@ -167,8 +167,8 @@ var Patterns = []Pattern{
 
 	// ── Code Execution ────────────────────────────────────────────
 	{
-		Regex:       regexp.MustCompile(`eval\s*\(`),
-		Description: "eval() executes arbitrary code",
+		Regex:       regexp.MustCompile(`eval\s*\(`),  // hwa-ignore
+		Description: "eval() executes arbitrary code", // hwa-ignore
 		Suggestion:  "Remove eval() and refactor",
 		Severity:    "critical",
 	},
@@ -187,5 +187,77 @@ var Patterns = []Pattern{
 		Suggestion:  "Set debug=False and use FLASK_ENV",
 		Severity:    "high",
 		Languages:   []string{"python"},
+	},
+
+	// ── Rust ──────────────────────────────────────────────────────
+	{
+		Regex:       regexp.MustCompile(`(?i)(?:api_key|apikey|api-key|secret|password|token)\s*=\s*"[^"]{4,}"`),
+		Description: "Hardcoded secret detected in Rust source",
+		Suggestion:  "Use environment variables via std::env::var() or the dotenvy crate",
+		Severity:    "critical",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`(?:AKIA|AIPA|ASIA|AROA|AIDA)[A-Z0-9]{16}`),
+		Description: "Hardcoded AWS access key detected",
+		Suggestion:  "Revoke immediately and use IAM roles or environment variables",
+		Severity:    "critical",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`ghp_[a-zA-Z0-9]{36}`),
+		Description: "Hardcoded GitHub token detected",
+		Suggestion:  "Revoke at github.com/settings/tokens",
+		Severity:    "critical",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`sk-[a-zA-Z0-9]{32,}`),
+		Description: "Hardcoded API key detected (possible OpenAI/Stripe key)",
+		Suggestion:  "Revoke and rotate immediately",
+		Severity:    "critical",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`unsafe\s*\{`),
+		Description: "Unsafe block detected — bypasses Rust memory safety guarantees",
+		Suggestion:  "Avoid unsafe blocks unless absolutely necessary and document why",
+		Severity:    "high",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`\.unwrap\(\)`),
+		Description: "unwrap() will panic if the value is None or Err",
+		Suggestion:  "Use match, if let, unwrap_or(), or ? operator instead",
+		Severity:    "medium",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`\.expect\s*\(\s*"[^"]*"\s*\)`),
+		Description: "expect() will panic if the value is None or Err",
+		Suggestion:  "Use proper error handling with match or the ? operator",
+		Severity:    "medium",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`rand::random\s*::<`),
+		Description: "rand::random is not cryptographically secure",
+		Suggestion:  "Use the rand::rngs::OsRng or the ring crate for cryptographic randomness",
+		Severity:    "medium",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`println!\s*\(.*(?:password|secret|token|key)`),
+		Description: "Possible sensitive data being printed to stdout",
+		Suggestion:  "Remove debug prints containing sensitive data before shipping",
+		Severity:    "medium",
+		Languages:   []string{"rust"},
+	},
+	{
+		Regex:       regexp.MustCompile(`std::process::exit\s*\(\s*0\s*\)`),
+		Description: "std::process::exit() skips destructors and cleanup",
+		Suggestion:  "Return from main() with a Result instead of calling process::exit()",
+		Severity:    "low",
+		Languages:   []string{"rust"},
 	},
 }

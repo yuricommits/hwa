@@ -50,6 +50,7 @@ function detectLanguage(uri: string): string {
   if (uri.endsWith(".js") || uri.endsWith(".jsx")) return "javascript";
   if (uri.endsWith(".py")) return "python";
   if (uri.endsWith(".go")) return "go";
+  if (uri.endsWith(".rs")) return "rust";
   return "typescript";
 }
 

@@ -48,7 +48,7 @@ func collectFiles(paths []string) ([]string, error) {
 				}
 				ext := filepath.Ext(p)
 				switch ext {
-				case ".ts", ".tsx", ".js", ".jsx", ".py", ".go":
+				case ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs":
 					files = append(files, p)
 				}
 				return nil

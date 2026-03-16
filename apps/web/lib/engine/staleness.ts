@@ -126,11 +126,11 @@ const CODE_PATTERNS: CodePattern[] = [
     languages: ["python"],
   },
   {
-    pattern: /rejectUnauthorized\s*:\s*false/g,
+    pattern: /rejectUnauthorized\s*:\s*false/g, // hwa-ignore
     description:
       "SSL certificate verification disabled — vulnerable to MITM attacks",
     suggestion:
-      "Remove rejectUnauthorized: false and use proper SSL certificates",
+      "Remove rejectUnauthorized: false and use proper SSL certificates", // hwa-ignore
     severity: "high",
     languages: ["typescript", "javascript"],
   },
@@ -158,8 +158,7 @@ const CODE_PATTERNS: CodePattern[] = [
     severity: "critical",
   },
   {
-    pattern:
-      /eyJ[a-zA-Z0-9_\-]{10,}\.[a-zA-Z0-9_\-]{4,}(?:\.[a-zA-Z0-9_\-]*)?/g,
+    pattern: /eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{4,}(?:\.[a-zA-Z0-9_-]*)?/g,
     description: "Hardcoded JWT token detected in source code",
     suggestion:
       "Remove the JWT — it likely contains sensitive claims and must be rotated",
@@ -189,7 +188,7 @@ const CODE_PATTERNS: CodePattern[] = [
 
   // ── Weak Randomness ───────────────────────────────────────────
   {
-    pattern: /Math\.random\s*\(\s*\)/g,
+    pattern: /Math\.random\s*\(\s*\)/g, // hwa-ignore
     description: "Math.random() is not cryptographically secure",
     suggestion: "Use crypto.randomBytes() or crypto.randomUUID() instead",
     severity: "medium",
@@ -206,9 +205,9 @@ const CODE_PATTERNS: CodePattern[] = [
 
   // ── Code Execution ────────────────────────────────────────────
   {
-    pattern: /eval\s*\(/g,
+    pattern: /eval\s*\(/g, // hwa-ignore
     description:
-      "eval() executes arbitrary code and is a critical security risk",
+      "eval() executes arbitrary code and is a critical security risk", // hwa-ignore
     suggestion: "Remove eval() — refactor to avoid dynamic code execution",
     severity: "critical",
   },
@@ -230,6 +229,55 @@ const CODE_PATTERNS: CodePattern[] = [
       "Set debug=False in production and use FLASK_ENV environment variable",
     severity: "high",
     languages: ["python"],
+  },
+
+  // ── Rust ─────────────────────────────────────────────────────
+  {
+    pattern:
+      /(?:api_key|apikey|api-key|secret|password|token)\s*=\s*"[^"]{4,}"/gi,
+    description: "Hardcoded secret detected in Rust source",
+    suggestion:
+      "Use environment variables via std::env::var() or the dotenvy crate",
+    severity: "critical" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /unsafe\s*\{/g,
+    description:
+      "Unsafe block detected — bypasses Rust memory safety guarantees",
+    suggestion:
+      "Avoid unsafe blocks unless absolutely necessary and document why",
+    severity: "high" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /\.unwrap\(\)/g,
+    description: "unwrap() will panic if the value is None or Err",
+    suggestion: "Use match, if let, unwrap_or(), or ? operator instead",
+    severity: "medium" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /\.expect\s*\(\s*"[^"]*"\s*\)/g,
+    description: "expect() will panic if the value is None or Err",
+    suggestion: "Use proper error handling with match or the ? operator",
+    severity: "medium" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /rand::random\s*::</g,
+    description: "rand::random is not cryptographically secure",
+    suggestion:
+      "Use rand::rngs::OsRng or the ring crate for cryptographic randomness",
+    severity: "medium" as const,
+    languages: ["rust"],
+  },
+  {
+    pattern: /println!\s*\(.*(?:password|secret|token|key)/gi,
+    description: "Possible sensitive data being printed to stdout",
+    suggestion: "Remove debug prints containing sensitive data before shipping",
+    severity: "medium" as const,
+    languages: ["rust"],
   },
 ];
 

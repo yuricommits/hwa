@@ -32,7 +32,7 @@ jobs:
 
       - name: Install hwa CLI
         run: |
-          curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.0/hwa-linux-amd64 \
+          curl -L https://github.com/yuricommits/hwa/releases/download/v0.1.1/hwa-linux-amd64 \
             -o /usr/local/bin/hwa
           chmod +x /usr/local/bin/hwa
           hwa version
