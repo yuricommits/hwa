@@ -132,7 +132,10 @@ Scans code as you type and shows inline diagnostics.
 
 ### Install
 
-`Ctrl+Shift+P` → **"zed: install dev extension"** → select `apps/zed-extension`
+Search for **HWA** in Zed's extension marketplace or:
+`Ctrl+Shift+P` → **"zed: extensions"** → search "hwa" → Install
+
+The LSP server downloads automatically — no manual setup required.
 
 ### Configure
 
