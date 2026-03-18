@@ -239,10 +239,11 @@ V1 (current)
 ✅ Zed IDE extension
 ✅ GitHub Actions CI/CD
 ✅ Rust language support
+✅ Zed IDE extension (registry submission pending)
+✅ Automated LSP binary builds
 
 V2
 ⬜ Go analysis engine deployment
-⬜ IDE plugin publishing (Zed registry)
 ⬜ CI/CD integration (GitLab, Bitbucket)
 ⬜ More language support (Ruby, Shell, Java)
 ```
