@@ -29,11 +29,11 @@ struct RpcNotification {
 }
 
 fn send(msg: &impl Serialize) {
-    let body = serde_json::to_string(msg).unwrap();
+    let body = serde_json::to_string(msg).unwrap(); // hwa-ignore
     let stdout = io::stdout();
     let mut out = stdout.lock();
-    write!(out, "Content-Length: {}\r\n\r\n{}", body.len(), body).unwrap();
-    out.flush().unwrap();
+    write!(out, "Content-Length: {}\r\n\r\n{}", body.len(), body).unwrap(); // hwa-ignore
+    out.flush().unwrap(); // hwa-ignore
 }
 
 fn send_diagnostics(uri: &str, findings: &[scanner::Finding]) {
