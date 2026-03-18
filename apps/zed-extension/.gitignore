@@ -1,0 +1,5 @@
+target/
+lsp-server/target/
+dist/
+hwa-lsp
+hwa-lsp.exe
