@@ -3,3 +3,13 @@ lsp-server/target/
 dist/
 hwa-lsp
 hwa-lsp.exe
+target/
+*.wasm
+target/
+*.wasm
+target/
+*.wasm
+target/
+*.wasm
+target/
+*.wasm

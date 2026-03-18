@@ -52,7 +52,7 @@ impl HwaExtension {
             (zed::Os::Linux, _) => "hwa-lsp-linux-amd64",
         };
 
-        let version = "v0.1.1";
+        let version = "v0.1.2";
         let url = format!(
             "https://github.com/yuricommits/hwa/releases/download/{}/{}",
             version, asset_name
