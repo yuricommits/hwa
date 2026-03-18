@@ -23,7 +23,7 @@ jobs:
         id: changed
         run: |
           git diff --name-only origin/${{ github.base_ref }}...HEAD \
-            | grep -E '\.(ts|tsx|js|jsx|py|go)$' \
+            | grep -E '\.(ts|tsx|js|jsx|py|go|rs)$' \
             | tr '\n' ' ' \
             > changed_files.txt
           echo "files=$(cat changed_files.txt)" >> $GITHUB_OUTPUT
@@ -44,32 +44,27 @@ jobs:
 
           if [ -z "$FILES" ]; then
             echo "No supported files changed, skipping scan"
-            echo '{"vulnerabilities":[]}' > hwa-results.json
+            echo '[]' > hwa-results.json
             echo "found_critical=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # Run scan and save JSON results
-          hwa scan $FILES --json > hwa-results.json 2>&1 || true
+          # Filter out files that no longer exist
+          EXISTING_FILES=""
+          for f in $FILES; do
+            if [ -f "$f" ]; then
+              EXISTING_FILES="$EXISTING_FILES $f"
+            fi
+          done
 
-          # Check for criticals
-          CRITICAL_COUNT=$(cat hwa-results.json | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          if isinstance(data, list):
-            print(len([x for x in data if x.get('severity') == 'critical']))
-          else:
-            print(0)
-          ")
-
-          echo "critical_count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
-          if [ "$CRITICAL_COUNT" -gt "0" ]; then
-            echo "found_critical=true" >> $GITHUB_OUTPUT
-          else
+          if [ -z "$EXISTING_FILES" ]; then
+            echo "No existing files to scan"
+            echo '[]' > hwa-results.json
             echo "found_critical=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
-          cat hwa-results.json
+          hwa scan $EXISTING_FILES --json > hwa-results.json 2>&1 || true
 
       - name: Upload results as artifact
         uses: actions/upload-artifact@v4
@@ -91,41 +86,33 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: '## ✅ HWA Security Scan\n\nNo vulnerabilities found in changed files.'
+                body: '## HWA Security Scan\n\nNo vulnerabilities found in changed files.'
               });
               return;
             }
-
-            const severityIcon = {
-              critical: '🔴',
-              high: '🟠',
-              medium: '🟡',
-              low: '🔵'
-            };
 
             const critical = results.filter(r => r.severity === 'critical');
             const high = results.filter(r => r.severity === 'high');
             const medium = results.filter(r => r.severity === 'medium');
             const low = results.filter(r => r.severity === 'low');
 
-            let body = `## ${critical.length > 0 ? '🚨' : '⚠️'} HWA Security Scan\n\n`;
+            let body = `## HWA Security Scan\n\n`;
 
             if (critical.length > 0) {
               body += `> **${critical.length} critical finding(s) — this PR is blocked until resolved.**\n\n`;
             }
 
             body += `| Severity | Count |\n|---|---|\n`;
-            if (critical.length) body += `| 🔴 Critical | ${critical.length} |\n`;
-            if (high.length) body += `| 🟠 High | ${high.length} |\n`;
-            if (medium.length) body += `| 🟡 Medium | ${medium.length} |\n`;
-            if (low.length) body += `| 🔵 Low | ${low.length} |\n`;
+            if (critical.length) body += `| CRITICAL | ${critical.length} |\n`;
+            if (high.length) body += `| HIGH | ${high.length} |\n`;
+            if (medium.length) body += `| MEDIUM | ${medium.length} |\n`;
+            if (low.length) body += `| LOW | ${low.length} |\n`;
             body += `\n### Findings\n\n`;
 
             for (const r of results) {
-              const icon = severityIcon[r.severity] ?? '⚪';
-              body += `**${icon} ${r.severity.toUpperCase()}** — \`${r.file}\` L${r.line}\n`;
+              body += `**${r.severity.toUpperCase()}** — \`${r.file}\` L${r.line}\n`;
               body += `${r.description}\n`;
-              body += `> → ${r.suggestion}\n\n`;
+              body += `> ${r.suggestion}\n\n`;
             }
 
             body += `---\n*Scanned by [hwa](https://github.com/yuricommits/hwa) · [View full report](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})*`;

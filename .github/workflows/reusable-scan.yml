@@ -36,7 +36,7 @@ jobs:
         if: inputs.scan_path == ''
         run: |
           git diff --name-only origin/${{ github.base_ref }}...HEAD \
-            | grep -E '\.(ts|tsx|js|jsx|py|go)$' \
+            | grep -E '\.(ts|tsx|js|jsx|py|go|rs)$' \
             | tr '\n' ' ' \
             > changed_files.txt
           echo "files=$(cat changed_files.txt)" >> $GITHUB_OUTPUT
@@ -59,7 +59,22 @@ jobs:
             exit 0
           fi
 
-          hwa scan $TARGET --json > hwa-results.json 2>&1 || true
+          # Filter out files that no longer exist
+          EXISTING_FILES=""
+          for f in $TARGET; do
+            if [ -f "$f" ]; then
+              EXISTING_FILES="$EXISTING_FILES $f"
+            fi
+          done
+
+          if [ -z "$EXISTING_FILES" ]; then
+            echo "No existing files to scan"
+            echo '[]' > hwa-results.json
+            echo "found_critical=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          hwa scan $EXISTING_FILES --json > hwa-results.json 2>&1 || true
 
           CRITICAL=$(cat hwa-results.json | python3 -c "
           import json, sys
@@ -84,25 +99,24 @@ jobs:
           script: |
             const fs = require('fs');
             const results = JSON.parse(fs.readFileSync('hwa-results.json', 'utf8'));
-            const icon = { critical: '🔴', high: '🟠', medium: '🟡', low: '🔵' };
 
             if (!Array.isArray(results) || results.length === 0) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: '## ✅ HWA Security Scan\n\nNo vulnerabilities found.'
+                body: '## HWA Security Scan\n\nNo vulnerabilities found.'
               });
               return;
             }
 
             const critical = results.filter(r => r.severity === 'critical').length;
-            let body = `## ${critical > 0 ? '🚨' : '⚠️'} HWA Security Scan\n\n`;
+            let body = `## HWA Security Scan\n\n`;
             if (critical > 0) body += `> **${critical} critical finding(s) — this PR is blocked.**\n\n`;
 
             for (const r of results) {
-              body += `**${icon[r.severity] ?? '⚪'} ${r.severity.toUpperCase()}** — \`${r.file}\` L${r.line}\n`;
-              body += `${r.description}\n> → ${r.suggestion}\n\n`;
+              body += `**${r.severity.toUpperCase()}** — \`${r.file}\` L${r.line}\n`;
+              body += `${r.description}\n> ${r.suggestion}\n\n`;
             }
 
             body += `---\n*[hwa](https://github.com/yuricommits/hwa)*`;
