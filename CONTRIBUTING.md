@@ -35,6 +35,17 @@ All PRs are automatically scanned by hwa itself. PRs with critical findings will
 ## Suppressing false positives
 Add `// hwa-ignore` or `# hwa-ignore` to any line to suppress hwa findings on that line or the line below it.
 
+## Building the Zed extension
+```bash
+cd apps/zed-extension
+
+# Build the WASM extension
+cargo build --target wasm32-wasip1 --release
+
+# Build the LSP server
+cd lsp-server && cargo build --release
+```
+
 ## Reporting vulnerabilities
 
 Please do not open public issues for security vulnerabilities. Instead, use [GitHub private vulnerability reporting](https://github.com/yuricommits/hwa/security/advisories/new).
