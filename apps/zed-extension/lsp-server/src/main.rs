@@ -97,7 +97,7 @@ fn handle_message(msg: RpcMessage) {
                     },
                     "serverInfo": {
                         "name": "hwa-lsp",
-                        "version": "0.1.0"
+                        "version": "0.1.1"
                     }
                 }),
             });
