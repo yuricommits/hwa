@@ -26,7 +26,7 @@ All PRs are automatically scanned by hwa itself. PRs with critical findings will
 ## Areas to contribute
 
 - New vulnerability patterns (`apps/web/lib/engine/staleness.ts`)
-- Additional language support (Ruby, Rust, Java)
+- Additional language support (Ruby, Julia, Java)
 - CVE source integrations
 - CLI improvements (`apps/cli/`)
 - IDE extension improvements (`apps/zed-extension/`)
