@@ -25,12 +25,11 @@ All PRs are automatically scanned by hwa itself. PRs with critical findings will
 
 ## Areas to contribute
 
-- New vulnerability patterns (`apps/web/lib/engine/staleness.ts`)
+- New vulnerability patterns (`apps/web/lib/engine/staleness.ts`), `apps/cli/internal/scanner/patterns.go`)
 - Additional language support (Ruby, Julia, Java)
 - CVE source integrations
 - CLI improvements (`apps/cli/`)
 - IDE extension improvements (`apps/zed-extension/`)
-- New vulnerability patterns for Rust (`apps/web/lib/engine/staleness.ts`, `apps/cli/internal/scanner/patterns.go`)
 
 ## Suppressing false positives
 Add `// hwa-ignore` or `# hwa-ignore` to any line to suppress hwa findings on that line or the line below it.
