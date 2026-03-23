@@ -49,7 +49,8 @@ pub static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
             languages: &["typescript", "javascript"],
         },
         Pattern {
-            regex: Regex::new(r#"(?i)(?:execute|cursor\.execute)\s*\(\s*f["'].*(?:username|password|email|id|input)"#).unwrap(),            description: "Potential SQL injection — f-string in SQL query",
+            regex: Regex::new(r#"(?i)(?:execute|cursor\.execute)\s*\(\s*f["'].*(?:username|password|email|id|input)"#).unwrap(),            
+            description: "Potential SQL injection — f-string in SQL query",
             suggestion: "Use parameterized queries",
             severity: "critical",
             languages: &["python"],
